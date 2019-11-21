@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset='utf-8' />
+    <title>Locator map {{ .Version }}</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='{{ .TilesURL }}/mapbox-gl.js'></script>
+    <link href='{{ .TilesURL }}/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+</head>
+<body>
+
+<div id='map'></div>
+<script>
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: '{{ .TilesURL }}/osm-liberty-gl.style',
+        center: [{{ .Lng }}, {{ .Lat }}],
+        zoom: 6,
+        maxZoom: 15,
+        minZoom: 6,
+        {{ if .TilesKey}}
+        transformRequest: (url, resourceType)=> {
+            if(resourceType === 'Tile') {
+                return {
+                    url: url,
+                    headers: { 'X-Key': '{{ .TilesKey }}'}
+                }
+            }
+        }
+        {{ end }}
+    });
+    // Add zoom and rotation controls to the map.
+    map.addControl(new mapboxgl.NavigationControl());
+    // Add geolocate control to the map.
+    map.addControl(new mapboxgl.GeolocateControl({
+        positionOptions: {
+            enableHighAccuracy: false
+        },
+        trackUserLocation: true
+    }));
+    function urlForBounds() {
+        const urlParams = new URLSearchParams(location.search);
+        let topic = 'metar';
+        if (urlParams.has('topic')) {
+            topic = urlParams.get('topic');
+        }
+        const mapBounds = map.getBounds();
+        return "/api/rect/" + "/" + mapBounds.getNorthEast().lat + "/" + mapBounds.getNorthEast().lng +
+            "/" + mapBounds.getSouthWest().lat + "/" + mapBounds.getSouthWest().lng;
+    }
+    map.on('load', function () {
+        map.addSource('points', { type: 'geojson', data: urlForBounds() });
+        map.addLayer({
+            "id": "points",
+            "type": "symbol",
+            "source": "points",
+            "layout": {
+                "icon-image": "airport_11",
+                "text-field": ["get", "key"],
+                "text-font": ["Roboto Regular"],
+                "text-variable-anchor": ["top"],
+                "text-justify": "auto",
+                "text-radial-offset": 0.7,
+            }
+        });
+    });
+    map.on('click', 'points', function (e) {
+        const key = e.features[0].properties.key;
+        const coordinates = e.features[0].geometry.coordinates.slice();
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', "/api/data/" + "/" + key, true);
+        xhr.onload = function() {
+            if (xhr.status !== 200) {
+                return;
+            }
+            let data = JSON.parse(xhr.responseText);
+            // Ensure that if the map is zoomed out such that multiple
+            // copies of the feature are visible, the popup appears
+            // over the copy being pointed to.
+            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            }
+            new mapboxgl.Popup()
+                .setLngLat(coordinates)
+                .setHTML(data.properties.data)
+                .addTo(map);
+        };
+        xhr.send();
+    });
+    map.on('moveend', function () {
+        map.getSource('points').setData(urlForBounds());
+    });
+</script>
+</body>
+</html>
+

@@ -72,7 +72,6 @@ func TestGetAll(t *testing.T) {
 	// storing a second one with the same key
 	ts2 := time.Now().UTC()
 	v2 := []byte("VALUE2")
-	ts = time.Now().UTC()
 	err = idx.Store(k, v2, 48.802, 2.201, ts2)
 	require.NoError(t, err)
 

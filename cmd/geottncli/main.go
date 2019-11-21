@@ -22,7 +22,6 @@ var (
 	lng       = flag.Float64("lng", 2.2, "Lng")
 	radius    = flag.Float64("radius", 1000, "Radius in meters")
 	key       = flag.String("key", "", "ask for a key, if empty perform radius search")
-	topic     = flag.String("topic", "metar", "topic")
 )
 
 func main() {

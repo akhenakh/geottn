@@ -16,6 +16,8 @@ import (
 	"github.com/dgraph-io/badger/v2/options"
 	log "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/gobuffalo/packr/v2"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	grpc_middleware "github.com/mwitkow/go-grpc-middleware"
@@ -38,21 +40,23 @@ const appName = "geottnd"
 var (
 	version = "no version from LDFLAGS"
 
-	appID           = flag.String("appID", "akhtestapp", "The things network application ID")
-	appAccessKey    = flag.String("appAccessKey", "", "The things network access key")
-	httpMetricsPort = flag.Int("httpMetricsPort", 8888, "http port")
-	httpAPIPort     = flag.Int("httpAPIPort", 9201, "http API port")
-	grpcPort        = flag.Int("grpcPort", 9200, "gRPC API port")
-	healthPort      = flag.Int("healthPort", 6666, "grpc health port")
-	channel         = flag.Int("channel", 1, "the Cayenne channel where to find gps messages")
-	dbPath          = flag.String("dbPath", "geo.db", "DB path")
+	appID        = flag.String("appID", "akhtestapp", "The things network application ID")
+	appAccessKey = flag.String("appAccessKey", "", "The things network access key")
+	channel      = flag.Int("channel", 1, "the Cayenne channel where to find gps messages")
 
-	key      = flag.String("key", "", "The key that will passed in the queries to the tiles server")
+	tilesKey = flag.String("tilesKey", "", "The key that will passed in the queries to the tiles server")
 	tilesURL = flag.String(
 		"tilesURL",
 		"http://127.0.0.1:8081",
 		"the URL where to point to get tiles",
 	)
+
+	dbPath = flag.String("dbPath", "geo.db", "DB path")
+
+	httpMetricsPort = flag.Int("httpMetricsPort", 8888, "http port")
+	httpAPIPort     = flag.Int("httpAPIPort", 9201, "http API port")
+	grpcPort        = flag.Int("grpcPort", 9200, "gRPC API port")
+	healthPort      = flag.Int("healthPort", 6666, "grpc health port")
 
 	httpServer        *http.Server
 	grpcHealthServer  *grpc.Server
@@ -132,9 +136,16 @@ func main() {
 
 	// geottn server
 	cfg := geottn.Config{
-		Channel: *channel,
+		Channel:  *channel,
+		TilesURL: *tilesURL,
+		TilesKey: *tilesKey,
 	}
+
+	// box html templates
+	box := packr.New("Root box", "./htdocs")
+
 	s := geottn.NewServer(appName, logger, cfg)
+	s.FileHandler = http.FileServer(box)
 	s.GeoDB = idx
 
 	// gRPC Server
@@ -172,6 +183,11 @@ func main() {
 		r := mux.NewRouter()
 		r.HandleFunc("/api/data/{key}", s.DataQuery)
 		r.HandleFunc("/api/rect/{urlat}/{urlng}/{bllat}/{bllng}", s.RectQuery)
+		r.PathPrefix("/").Handler(
+			handlers.CompressHandler(
+				handlers.CORS(
+					handlers.AllowedOrigins([]string{"*"}))(s)))
+
 		httpServer = &http.Server{
 			Addr:         fmt.Sprintf(":%d", *httpAPIPort),
 			ReadTimeout:  10 * time.Second,
@@ -246,8 +262,6 @@ func main() {
 			}
 
 		}
-
-		return nil
 	})
 
 	select {

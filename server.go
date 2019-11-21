@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/TheThingsNetwork/ttn/core/types"
 	log "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/gobuffalo/packr/v2"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/health"
@@ -18,16 +20,23 @@ import (
 )
 
 type Server struct {
-	appName string
-	logger  log.Logger
-	Health  *health.Server
-	GeoDB   storage.Indexer
-	config  Config
+	appName     string
+	logger      log.Logger
+	Health      *health.Server
+	GeoDB       storage.Indexer
+	config      Config
+	FileHandler http.Handler
+	Box         *packr.Box
 }
 
 type Config struct {
 	// the cayenne channel used for gps messages
 	Channel int
+
+	// the URL where to point to get mapbox tiles
+	TilesURL string
+	// the Key for mapbox
+	TilesKey string
 }
 
 func NewServer(appName string, logger log.Logger, cfg Config) *Server {
