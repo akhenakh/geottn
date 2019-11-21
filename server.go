@@ -97,8 +97,19 @@ func (s *Server) RadiusSearch(ctx context.Context, req *geottnsvc.RadiusSearchRe
 	return res, nil
 }
 
-func (s *Server) RectSearch(ctx context.Context, in *geottnsvc.RectSearchRequest) (*geottnsvc.DataPoints, error) {
-	return nil, errors.New("not implemented")
+func (s *Server) RectSearch(ctx context.Context, req *geottnsvc.RectSearchRequest) (*geottnsvc.DataPoints, error) {
+	dps, err := s.GeoDB.RectSearch(req.Urlat, req.Urlng, req.Bllat, req.Bllng)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &geottnsvc.DataPoints{
+		Points: make([]*geottnsvc.DataPoint, len(dps)),
+	}
+	for i, dp := range dps {
+		res.Points[i] = StorageToDataPoint(&dp)
+	}
+	return res, nil
 }
 
 func (s *Server) Get(ctx context.Context, req *geottnsvc.GetRequest) (*geottnsvc.DataPoint, error) {
