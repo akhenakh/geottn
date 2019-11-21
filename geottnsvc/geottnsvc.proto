@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service GeoTTN {
+  rpc Store (DataPoint) returns (google.protobuf.Empty) {}
+  rpc RadiusSearch(RadiusSearchRequest) returns (DataPoints) {}
+  rpc RectSearch(RectSearchRequest) returns (DataPoints) {}
+  rpc Get(GetRequest) returns (DataPoint) {}
+  rpc GetAll(GetRequest) returns (DataPoints) {}
+}
+
+message DataPoint {
+    string app_id = 1;
+    string device_id = 2;
+    double latitude = 3;
+    double longitude = 4;
+    google.protobuf.Timestamp time = 5;
+    bytes payload = 6;
+}
+
+message DataPoints {
+    repeated DataPoint points = 1;
+}
+
+message GetRequest {
+    string key = 1;
+}
+
+message RadiusSearchRequest {
+    double lat = 1;
+    double lng = 2;
+    // radius in meters
+    double radius = 3;
+}
+
+message RectSearchRequest {
+    double urlat = 1;
+    double urlng = 2;
+    double bllat = 3;
+    double bllng = 4;
+}

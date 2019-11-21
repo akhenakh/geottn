@@ -16,3 +16,5 @@
 
 !/cmd/geottnd/geottnd
 !/cmd/ttncli/ttncli
+!/cmd/geottnd/geottnd
+!/cmd/geottnd/geo.db/

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	stdlog "log"
 	"net"
@@ -13,18 +12,28 @@ import (
 	"time"
 
 	ttnsdk "github.com/TheThingsNetwork/go-app-sdk"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v2/options"
 	log "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/gorilla/mux"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	grpc_middleware "github.com/mwitkow/go-grpc-middleware"
+	grpc_opentracing "github.com/mwitkow/go-grpc-middleware/tracing/opentracing"
 	"github.com/namsral/flag"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/keepalive"
+
+	"github.com/akhenakh/geottn"
+	"github.com/akhenakh/geottn/geottnsvc"
+	badgeridx "github.com/akhenakh/geottn/storage/badger"
 )
 
-const appName = "geottn"
+const appName = "geottnd"
 
 var (
 	version = "no version from LDFLAGS"
@@ -33,10 +42,21 @@ var (
 	appAccessKey    = flag.String("appAccessKey", "", "The things network access key")
 	httpMetricsPort = flag.Int("httpMetricsPort", 8888, "http port")
 	httpAPIPort     = flag.Int("httpAPIPort", 9201, "http API port")
+	grpcPort        = flag.Int("grpcPort", 9200, "gRPC API port")
 	healthPort      = flag.Int("healthPort", 6666, "grpc health port")
+	channel         = flag.Int("channel", 1, "the Cayenne channel where to find gps messages")
+	dbPath          = flag.String("dbPath", "geo.db", "DB path")
 
-	httpAPIServer     *http.Server
+	key      = flag.String("key", "", "The key that will passed in the queries to the tiles server")
+	tilesURL = flag.String(
+		"tilesURL",
+		"http://127.0.0.1:8081",
+		"the URL where to point to get tiles",
+	)
+
+	httpServer        *http.Server
 	grpcHealthServer  *grpc.Server
+	grpcServer        *grpc.Server
 	httpMetricsServer *http.Server
 )
 
@@ -61,6 +81,18 @@ func main() {
 	defer signal.Stop(interrupt)
 
 	g, ctx := errgroup.WithContext(ctx)
+
+	// Badger
+	opts := badger.DefaultOptions(*dbPath)
+	opts.TableLoadingMode = options.FileIO
+
+	bdb, err := badger.Open(opts)
+	if err != nil {
+		level.Error(logger).Log("msg", "failed to open DB", "error", err, "path", *dbPath)
+		os.Exit(2)
+	}
+
+	idx := &badgeridx.Indexer{DB: bdb}
 
 	// gRPC Health Server
 	healthServer := health.NewServer()
@@ -98,19 +130,57 @@ func main() {
 		return nil
 	})
 
-	// web API server
-	g.Go(func() error {
-		mux := runtime.NewServeMux()
+	// geottn server
+	cfg := geottn.Config{
+		Channel: *channel,
+	}
+	s := geottn.NewServer(appName, logger, cfg)
+	s.GeoDB = idx
 
-		httpAPIServer = &http.Server{
+	// gRPC Server
+	g.Go(func() error {
+		addr := fmt.Sprintf(":%d", *grpcPort)
+		ln, err := net.Listen("tcp", addr)
+		if err != nil {
+			level.Error(logger).Log("msg", "gRPC server: failed to listen", "error", err)
+			os.Exit(2)
+		}
+
+		grpcServer = grpc.NewServer(
+			// MaxConnectionAge is just to avoid long connection, to facilitate load balancing
+			// MaxConnectionAgeGrace will torn them, default to infinity
+			grpc.KeepaliveParams(keepalive.ServerParameters{MaxConnectionAge: 2 * time.Minute}),
+			grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+				grpc_opentracing.StreamServerInterceptor(),
+				grpc_prometheus.StreamServerInterceptor,
+			)),
+			grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+				grpc_opentracing.UnaryServerInterceptor(),
+				grpc_prometheus.UnaryServerInterceptor,
+			)),
+		)
+		geottnsvc.RegisterGeoTTNServer(grpcServer, s)
+		level.Info(logger).Log("msg", fmt.Sprintf("gRPC server serving at %s", addr))
+
+		healthServer.SetServingStatus(fmt.Sprintf("grpc.health.v1.%s", appName), healthpb.HealthCheckResponse_SERVING)
+
+		return grpcServer.Serve(ln)
+	})
+
+	// web server
+	g.Go(func() error {
+		r := mux.NewRouter()
+		r.HandleFunc("/api/data/{key}", s.DataQuery)
+		r.HandleFunc("/api/rect/{urlat}/{urlng}/{bllat}/{bllng}", s.RectQuery)
+		httpServer = &http.Server{
 			Addr:         fmt.Sprintf(":%d", *httpAPIPort),
 			ReadTimeout:  10 * time.Second,
 			WriteTimeout: 10 * time.Second,
-			Handler:      mux,
+			Handler:      r,
 		}
 		level.Info(logger).Log("msg", fmt.Sprintf("HTTP API server serving at :%d", *httpAPIPort))
 
-		if err := httpAPIServer.ListenAndServe(); err != http.ErrServerClosed {
+		if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {
 			return err
 		}
 
@@ -172,12 +242,7 @@ func main() {
 				if msg == nil {
 					break
 				}
-				hexPayload := hex.EncodeToString(msg.PayloadRaw)
-				level.Info(logger).Log(
-					"devID", msg.DevID,
-					"msg", "received msg",
-					"payload", hexPayload)
-
+				s.HandleMessage(ctx, msg)
 			}
 
 		}
@@ -204,15 +269,19 @@ func main() {
 		_ = httpMetricsServer.Shutdown(shutdownCtx)
 	}
 
-	if httpAPIServer != nil {
-		_ = httpAPIServer.Shutdown(shutdownCtx)
+	if httpServer != nil {
+		_ = httpServer.Shutdown(shutdownCtx)
+	}
+
+	if grpcServer != nil {
+		grpcServer.GracefulStop()
 	}
 
 	if grpcHealthServer != nil {
 		grpcHealthServer.GracefulStop()
 	}
 
-	err := g.Wait()
+	err = g.Wait()
 	if err != nil {
 		level.Error(logger).Log("msg", "server returning an error", "error", err)
 		os.Exit(2)
