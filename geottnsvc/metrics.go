@@ -1,4 +1,4 @@
-package geottn
+package geottnsvc
 
 import (
 	"github.com/prometheus/client_golang/prometheus"

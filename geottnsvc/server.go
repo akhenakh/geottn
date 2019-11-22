@@ -1,42 +1,32 @@
-package geottn
+package geottnsvc
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/TheThingsNetwork/ttn/core/types"
 	log "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/gobuffalo/packr/v2"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/health"
 
-	"github.com/akhenakh/geottn/geottnsvc"
 	"github.com/akhenakh/geottn/storage"
 )
 
 type Server struct {
-	appName     string
-	logger      log.Logger
-	Health      *health.Server
-	GeoDB       storage.Indexer
-	config      Config
-	FileHandler http.Handler
-	Box         *packr.Box
+	appName string
+	logger  log.Logger
+	Health  *health.Server
+	GeoDB   storage.Indexer
+	config  Config
 }
 
 type Config struct {
 	// the cayenne channel used for gps messages
 	Channel int
-
-	// the URL where to point to get mapbox tiles
-	TilesURL string
-	// the Key for mapbox
-	TilesKey string
 }
 
 func NewServer(appName string, logger log.Logger, cfg Config) *Server {
@@ -77,7 +67,7 @@ func (s *Server) HandleMessage(ctx context.Context, msg *types.UplinkMessage) {
 	InsertCounter.Inc()
 }
 
-func (s *Server) Store(ctx context.Context, dp *geottnsvc.DataPoint) (*empty.Empty, error) {
+func (s *Server) Store(ctx context.Context, dp *DataPoint) (*empty.Empty, error) {
 	e := &empty.Empty{}
 	t, err := ptypes.Timestamp(dp.Time)
 	if err != nil {
@@ -91,14 +81,14 @@ func (s *Server) Store(ctx context.Context, dp *geottnsvc.DataPoint) (*empty.Emp
 	return e, nil
 }
 
-func (s *Server) RadiusSearch(ctx context.Context, req *geottnsvc.RadiusSearchRequest) (*geottnsvc.DataPoints, error) {
+func (s *Server) RadiusSearch(ctx context.Context, req *RadiusSearchRequest) (*DataPoints, error) {
 	dps, err := s.GeoDB.RadiusSearch(req.Lat, req.Lng, req.Radius)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &geottnsvc.DataPoints{
-		Points: make([]*geottnsvc.DataPoint, len(dps)),
+	res := &DataPoints{
+		Points: make([]*DataPoint, len(dps)),
 	}
 	for i, dp := range dps {
 		res.Points[i] = StorageToDataPoint(&dp)
@@ -106,14 +96,14 @@ func (s *Server) RadiusSearch(ctx context.Context, req *geottnsvc.RadiusSearchRe
 	return res, nil
 }
 
-func (s *Server) RectSearch(ctx context.Context, req *geottnsvc.RectSearchRequest) (*geottnsvc.DataPoints, error) {
+func (s *Server) RectSearch(ctx context.Context, req *RectSearchRequest) (*DataPoints, error) {
 	dps, err := s.GeoDB.RectSearch(req.Urlat, req.Urlng, req.Bllat, req.Bllng)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &geottnsvc.DataPoints{
-		Points: make([]*geottnsvc.DataPoint, len(dps)),
+	res := &DataPoints{
+		Points: make([]*DataPoint, len(dps)),
 	}
 	for i, dp := range dps {
 		res.Points[i] = StorageToDataPoint(&dp)
@@ -121,7 +111,7 @@ func (s *Server) RectSearch(ctx context.Context, req *geottnsvc.RectSearchReques
 	return res, nil
 }
 
-func (s *Server) Get(ctx context.Context, req *geottnsvc.GetRequest) (*geottnsvc.DataPoint, error) {
+func (s *Server) Get(ctx context.Context, req *GetRequest) (*DataPoint, error) {
 	dps, err := s.GeoDB.Get(req.Key)
 	if err != nil {
 		return nil, err
@@ -130,16 +120,16 @@ func (s *Server) Get(ctx context.Context, req *geottnsvc.GetRequest) (*geottnsvc
 	return StorageToDataPoint(dps), nil
 }
 
-func (s *Server) GetAll(ctx context.Context, in *geottnsvc.GetRequest) (*geottnsvc.DataPoints, error) {
+func (s *Server) GetAll(ctx context.Context, in *GetRequest) (*DataPoints, error) {
 	return nil, errors.New("not implemented")
 }
 
-func StorageToDataPoint(dp *storage.DataPoint) *geottnsvc.DataPoint {
+func StorageToDataPoint(dp *storage.DataPoint) *DataPoint {
 	if dp == nil {
 		return nil
 	}
 	t, _ := ptypes.TimestampProto(dp.Time)
-	return &geottnsvc.DataPoint{
+	return &DataPoint{
 		DeviceId:  dp.Key,
 		Latitude:  dp.Lat,
 		Longitude: dp.Lng,

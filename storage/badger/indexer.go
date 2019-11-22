@@ -175,13 +175,13 @@ func (idx *Indexer) RectSearch(urlat, urlng, bllat, bllng float64) ([]storage.Da
 					break
 				}
 				ck := item.KeyCopy(nil)
-				c, t, _, _ := storage.ReadPointKey(ck)
+				c, t, rk, _ := storage.ReadPointKey(ck)
 				if rect.ContainsPoint(c.Point()) {
 					p := storage.DataPoint{
 						Lat:  c.LatLng().Lat.Degrees(),
 						Lng:  c.LatLng().Lng.Degrees(),
 						Time: t,
-						Key:  string(ck),
+						Key:  rk,
 					}
 
 					cv, err := item.ValueCopy(nil)
@@ -230,15 +230,15 @@ func (idx *Indexer) RadiusSearch(lat, lng, radius float64) ([]storage.DataPoint,
 				if bytes.Compare(k, stop) > 0 {
 					break
 				}
-				c, t, _, _ := storage.ReadPointKey(k)
 				ck := item.KeyCopy(nil)
+				c, t, rk, _ := storage.ReadPointKey(ck)
 
 				if acap.ContainsPoint(c.Point()) {
 					p := storage.DataPoint{
 						Lat:  c.LatLng().Lat.Degrees(),
 						Lng:  c.LatLng().Lng.Degrees(),
 						Time: t,
-						Key:  string(ck),
+						Key:  rk,
 					}
 					cv, err := item.ValueCopy(nil)
 					if err != nil {

@@ -30,9 +30,9 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/akhenakh/geottn"
 	"github.com/akhenakh/geottn/geottnsvc"
 	badgeridx "github.com/akhenakh/geottn/storage/badger"
+	"github.com/akhenakh/geottn/web"
 )
 
 const appName = "geottnd"
@@ -134,19 +134,8 @@ func main() {
 		return nil
 	})
 
-	// geottn server
-	cfg := geottn.Config{
-		Channel:  *channel,
-		TilesURL: *tilesURL,
-		TilesKey: *tilesKey,
-	}
-
-	// box html templates
-	box := packr.New("Root box", "./htdocs")
-
-	s := geottn.NewServer(appName, logger, cfg)
-	s.FileHandler = http.FileServer(box)
-	s.GeoDB = idx
+	cfg := geottnsvc.Config{Channel: *channel}
+	s := geottnsvc.NewServer(appName, logger, cfg)
 
 	// gRPC Server
 	g.Go(func() error {
@@ -180,6 +169,21 @@ func main() {
 
 	// web server
 	g.Go(func() error {
+		// web server
+		cfg := web.Config{
+			Channel:  *channel,
+			TilesURL: *tilesURL,
+			TilesKey: *tilesKey,
+		}
+
+		s := web.NewServer(appName, logger, idx, cfg)
+
+		// box html templates
+		box := packr.New("Root box", "./templates")
+
+		s.FileHandler = http.FileServer(box)
+		s.Box = box
+
 		r := mux.NewRouter()
 		r.HandleFunc("/api/data/{key}", s.DataQuery)
 		r.HandleFunc("/api/rect/{urlat}/{urlng}/{bllat}/{bllng}", s.RectQuery)

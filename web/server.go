@@ -1,4 +1,4 @@
-package geottn
+package web
 
 import (
 	"bytes"
@@ -12,17 +12,50 @@ import (
 	"strings"
 
 	"github.com/akhenakh/cayenne"
+	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/mux"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/twpayne/go-geom"
 	"github.com/twpayne/go-geom/encoding/geojson"
+
+	"github.com/akhenakh/geottn/storage"
 )
 
 var (
 	pathTpl = []string{"index.html"}
 )
+
+type Server struct {
+	appName     string
+	logger      log.Logger
+	geoDB       storage.Indexer
+	config      Config
+	FileHandler http.Handler
+	Box         *packr.Box
+}
+
+type Config struct {
+	// the cayenne channel used for gps messages
+	Channel int
+
+	// the URL where to point to get mapbox tiles
+	TilesURL string
+	// the Key for mapbox
+	TilesKey string
+}
+
+func NewServer(appName string, logger log.Logger, geoDB storage.Indexer, cfg Config) *Server {
+	logger = log.With(logger, "component", "web")
+	return &Server{
+		appName: appName,
+		logger:  logger,
+		config:  cfg,
+		geoDB:   geoDB,
+	}
+}
 
 func (s *Server) DataQuery(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
@@ -46,7 +79,7 @@ func (s *Server) DataQuery(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	dp, err := s.GeoDB.Get(vars["key"])
+	dp, err := s.geoDB.Get(vars["key"])
 	if err != nil {
 		level.Error(s.logger).Log("msg", "can't query Get", "key", vars["key"], "error", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -125,7 +158,7 @@ func (s *Server) RectQuery(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	dpts, err := s.GeoDB.RectSearch(urlat, urlng, bllat, bllng)
+	dpts, err := s.geoDB.RectSearch(urlat, urlng, bllat, bllng)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
@@ -135,7 +168,7 @@ func (s *Server) RectQuery(w http.ResponseWriter, r *http.Request) {
 	for _, p := range dpts {
 		f := &geojson.Feature{}
 		f.Properties = make(map[string]interface{})
-		f.Properties["id"] = p.Key
+		f.Properties["device_id"] = p.Key
 		f.Properties["ts"] = p.Time
 
 		pg := geom.NewPointFlat(geom.XY, []float64{p.Lng, p.Lat})

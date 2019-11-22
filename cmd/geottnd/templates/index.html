@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset='utf-8' />
-    <title>Locator map {{ .Version }}</title>
+    <title>GeoTTN map {{ .Version }}</title>
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <script src='{{ .TilesURL }}/mapbox-gl.js'></script>
     <link href='{{ .TilesURL }}/mapbox-gl.css' rel='stylesheet' />
@@ -44,10 +44,6 @@
     }));
     function urlForBounds() {
         const urlParams = new URLSearchParams(location.search);
-        let topic = 'metar';
-        if (urlParams.has('topic')) {
-            topic = urlParams.get('topic');
-        }
         const mapBounds = map.getBounds();
         return "/api/rect/" + "/" + mapBounds.getNorthEast().lat + "/" + mapBounds.getNorthEast().lng +
             "/" + mapBounds.getSouthWest().lat + "/" + mapBounds.getSouthWest().lng;
@@ -60,7 +56,7 @@
             "source": "points",
             "layout": {
                 "icon-image": "airport_11",
-                "text-field": ["get", "key"],
+                "text-field": ["get", "device_id"],
                 "text-font": ["Roboto Regular"],
                 "text-variable-anchor": ["top"],
                 "text-justify": "auto",
@@ -69,7 +65,7 @@
         });
     });
     map.on('click', 'points', function (e) {
-        const key = e.features[0].properties.key;
+        const key = e.features[0].properties.device_id;
         const coordinates = e.features[0].geometry.coordinates.slice();
 
         const xhr = new XMLHttpRequest();
@@ -85,9 +81,16 @@
             while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
                 coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
             }
+            var htmlData = "";
+            var keys = Object.keys(data);
+            for (let key of Object.keys(data)) {
+                htmlData += key + ":" + data[key] + "<br>";
+            }
+            console.log(keys);
+
             new mapboxgl.Popup()
                 .setLngLat(coordinates)
-                .setHTML(data.properties.data)
+                .setHTML(htmlData)
                 .addTo(map);
         };
         xhr.send();
