@@ -29,12 +29,13 @@ type Config struct {
 	Channel int
 }
 
-func NewServer(appName string, logger log.Logger, cfg Config) *Server {
+func NewServer(appName string, logger log.Logger, idx storage.Indexer, cfg Config) *Server {
 	logger = log.With(logger, "component", "server")
 	return &Server{
 		appName: appName,
 		logger:  logger,
 		config:  cfg,
+		GeoDB:   idx,
 	}
 }
 

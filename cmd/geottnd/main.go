@@ -135,7 +135,8 @@ func main() {
 	})
 
 	cfg := geottnsvc.Config{Channel: *channel}
-	s := geottnsvc.NewServer(appName, logger, cfg)
+	s := geottnsvc.NewServer(appName, logger, idx, cfg)
+	s.Health = healthServer
 
 	// gRPC Server
 	g.Go(func() error {
