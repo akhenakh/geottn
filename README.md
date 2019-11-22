@@ -41,15 +41,7 @@ docker run -it akhenakh/geottn:latest -e TILESKEY=pk.eyJxxxxxxxxxxxxxxxxxxxx  -e
 For the map to show up register with MapBox for a [free token](https://account.mapbox.com/access-tokens/) and pass it as `tilesKey`.  
 Note that you can use a [self hosted map solution](https://blog.nobugware.com/post/2019/self_hosted_world_maps/) with `selfHostedMap=true`.
 
-## Plan
 
-- Register devices with the web interface
-- Vuejs web interface
-- end to end TLS certs
-
-## Help
-
-This is a work in progress, help and ideas are welcome.
 
 ## Build
 
@@ -63,4 +55,45 @@ make geottnd
 make geottnd-image
 ```
 
+## API
+A gRPC API is exposed 
 
+```proto
+service GeoTTN {
+  rpc Store (DataPoint) returns (google.protobuf.Empty) {}
+  rpc RadiusSearch(RadiusSearchRequest) returns (DataPoints) {}
+  rpc RectSearch(RectSearchRequest) returns (DataPoints) {}
+  rpc Get(GetRequest) returns (DataPoint) {}
+  rpc GetAll(GetRequest) returns (DataPoints) {}
+}
+```
+
+There is a demo cli in `cmd/geottncli`
+
+```
+ ./cmd/geottncli/geottncli -radius=1000
+2019/11/22 14:28:03 query ok 2
+2019/11/22 14:28:03 map[device_id:ttgo00 gps_1:[48.4 2.45 0] time:seconds:1574438932 nanos:728890266 ]
+2019/11/22 14:28:03 map[device_id:ttgosens00 gps_1:[48.8821 2.28 0] time:seconds:1574434228 nanos:790831992 ]
+
+./cmd/geottncli/geottncli -key ttgosens00  
+2019/11/22 14:28:19 map[device_id:ttgosens00 gps_1:[48.8821 2.28 0] time:seconds:1574434228 nanos:790831992 ]
+
+```
+
+A very simple web API (used for the web interface):
+```go
+r.HandleFunc("/api/data/{key}", s.DataQuery)
+r.HandleFunc("/api/rect/{urlat}/{urlng}/{bllat}/{bllng}", s.RectQuery)
+```
+
+
+## Plan
+
+- Register devices with the web interface
+- Vuejs web interface
+- end to end TLS certs
+
+## Help
+
+This is a work in progress, help and ideas are welcome.
