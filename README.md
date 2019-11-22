@@ -93,6 +93,7 @@ r.HandleFunc("/api/rect/{urlat}/{urlng}/{bllat}/{bllng}", s.RectQuery)
 - Register devices with the web interface
 - Vuejs web interface
 - end to end TLS certs
+- support no GPS data
 
 ## Help
 

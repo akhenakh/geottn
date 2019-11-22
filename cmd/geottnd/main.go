@@ -191,15 +191,14 @@ func main() {
 		r.HandleFunc("/api/data/{key}", s.DataQuery)
 		r.HandleFunc("/api/rect/{urlat}/{urlng}/{bllat}/{bllng}", s.RectQuery)
 		r.PathPrefix("/").Handler(
-			handlers.CompressHandler(
-				handlers.CORS(
-					handlers.AllowedOrigins([]string{"*"}))(s)))
+			handlers.CORS(
+				handlers.AllowedOrigins([]string{"*"}))(s))
 
 		httpServer = &http.Server{
 			Addr:         fmt.Sprintf(":%d", *httpAPIPort),
 			ReadTimeout:  10 * time.Second,
 			WriteTimeout: 10 * time.Second,
-			Handler:      r,
+			Handler:      handlers.CompressHandler(r),
 		}
 		level.Info(logger).Log("msg", fmt.Sprintf("HTTP API server serving at :%d", *httpAPIPort))
 
