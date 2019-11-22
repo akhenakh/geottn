@@ -28,6 +28,9 @@ geottnd:
 geottnd-image: geottnd
 	cd cmd/geottnd && docker build -t geottnd:$(VERSION) .
 
+geottnd-publish-image: geottnd-image
+	docker tag  geottnd:$(VERSION) akhenakh/geottnd:latest
+
 clean:
 	rm -f cmd/geottnd/geottnd
 

@@ -1,7 +1,7 @@
 GeoTTN
 ------
 
-An application for The Things Network moving devices.
+An application for [The Things Network](https://www.thethingsnetwork.org/) moving devices.
 
 This is an all in one server, that will store historical data of your devices and display them on a map, also exposing an API to query.  
 
@@ -32,7 +32,7 @@ Simply pass your `appID` & `appAccessKey` on the command line or via environment
 You can also use the docker image as follow:
 
 ```
-docker run akhenakh/geottn:latest -e --tilesKey=pk.eyJxxxxxxxxxxxxxxxxxxxx  -e APPID=myappid -e APPACCESSKEY=xxxxxxxxxx -e DBPATH=/data/geo.db -v /mysafesotorage/volume:/data
+docker run -it akhenakh/geottn:latest -e TILESKEY=pk.eyJxxxxxxxxxxxxxxxxxxxx  -e APPID=myappid -e APPACCESSKEY=xxxxxxxxxx -e DBPATH=/data/geo.db -v /mysafesotorage/volume:/data
 ```
 
 For the map to show up register with MapBox for a [free token](https://account.mapbox.com/access-tokens/) and pass it as `tilesKey`.  
@@ -47,3 +47,17 @@ Note that you can use a [self hosted map solution](https://blog.nobugware.com/po
 ## Help
 
 This is a work in progress, help and ideas are welcome.
+
+## Build
+
+You'll need the `packr2` command:
+```
+go get -u github.com/gobuffalo/packr/v2/packr2
+```
+
+```
+make geottnd
+make geottnd-image
+```
+
+
