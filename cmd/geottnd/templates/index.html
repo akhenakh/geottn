@@ -94,7 +94,7 @@
     function urlForBounds() {
         const urlParams = new URLSearchParams(location.search);
         const mapBounds = map.getBounds();
-        return "/api/rect/" + "/" + mapBounds.getNorthEast().lat + "/" + mapBounds.getNorthEast().lng +
+        return "/api/rect/" + mapBounds.getNorthEast().lat + "/" + mapBounds.getNorthEast().lng +
             "/" + mapBounds.getSouthWest().lat + "/" + mapBounds.getSouthWest().lng;
     }
     map.on('load', function () {
