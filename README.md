@@ -5,7 +5,7 @@ An application for [The Things Network](https://www.thethingsnetwork.org/) movin
 
 This is an all in one server, that will store historical data of your devices and display them on a map, also exposing an API to query.  
 
-The idea is to have a self hosted solution IOT that works without sending your data to a third party.
+The idea is to have a self hosted IOT solution that works without sending your data to a third party.
 
 The assumed encoding from your device is [Cayenne](https://developers.mydevices.com/cayenne/docs/lora/#lora-cayenne-low-power-payload)
 
@@ -21,7 +21,7 @@ GeoTTN is a multi components app put together:
 - A gRPC API to query the Badger database
 - A web frontend to display the devices on a map
 
-It's shipped this way on purpose to run inside a one Docker instance, without resorting to complex admin task.  
+It's shipped in one app on purpose to run inside a one Docker instance, without resorting to complex admin task.  
 It should be fine for thousands of devices until you want to break the components apart, contact me for a more robust clustered solution.
 
 The code is modular so you can change it for your own purpose.
