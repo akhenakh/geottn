@@ -9,6 +9,9 @@ The idea is to have a self hosted solution IOT that works without sending your d
 
 The assumed encoding from your device is [Cayenne](https://developers.mydevices.com/cayenne/docs/lora/#lora-cayenne-low-power-payload)
 
+
+![Current web interface](/img/interface.jpg?raw=true "Inteface")
+
 ## Technical Details
 
 GeoTTN is a multi components app put together:
