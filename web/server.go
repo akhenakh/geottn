@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/akhenakh/cayenne"
 	"github.com/go-kit/kit/log"
@@ -106,7 +107,7 @@ func (s *Server) DataQuery(w http.ResponseWriter, r *http.Request) {
 			jsresp[k] = v
 		}
 		jsresp["device_id"] = dp.Key
-		jsresp["time"] = dp.Time
+		jsresp["time"] = dp.Time.Format(time.RFC3339)
 
 		res[i] = jsresp
 	}
@@ -174,7 +175,7 @@ func (s *Server) RectQuery(w http.ResponseWriter, r *http.Request) {
 		f := &geojson.Feature{}
 		f.Properties = make(map[string]interface{})
 		f.Properties["device_id"] = p.Key
-		f.Properties["ts"] = p.Time
+		f.Properties["ts"] = p.Time.Format(time.RFC3339)
 
 		pg := geom.NewPointFlat(geom.XY, []float64{p.Lng, p.Lat})
 		f.Geometry = pg
