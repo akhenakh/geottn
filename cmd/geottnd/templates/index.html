@@ -4,8 +4,13 @@
     <meta charset='utf-8' />
     <title>GeoTTN map {{ .Version }}</title>
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    {{ if .SelfHostedMap }}
     <script src='{{ .TilesURL }}/mapbox-gl.js'></script>
     <link href='{{ .TilesURL }}/mapbox-gl.css' rel='stylesheet' />
+    {{ else }}
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.css' rel='stylesheet' />
+    {{ end }}
     <style>
         body { margin:0; padding:0; }
         #map { position:absolute; top:0; bottom:0; width:100%; }
@@ -15,14 +20,21 @@
 
 <div id='map'></div>
 <script>
-    const map = new mapboxgl.Map({
+    {{ if not .SelfHostedMap }}
+    mapboxgl.accessToken = '{{ .TilesKey }}';
+    {{ end }}
+    var map = new mapboxgl.Map({
         container: 'map',
+        {{ if .SelfHostedMap }}
         style: '{{ .TilesURL }}/osm-liberty-gl.style',
+        {{ else }}
+        style: 'mapbox://styles/mapbox/streets-v9',
+        {{ end }}
         center: [{{ .Lng }}, {{ .Lat }}],
         zoom: 6,
         maxZoom: 15,
         minZoom: 6,
-        {{ if .TilesKey}}
+        {{ if .SelfHostedMap}}
         transformRequest: (url, resourceType)=> {
             if(resourceType === 'Tile') {
                 return {
@@ -55,12 +67,15 @@
             "type": "symbol",
             "source": "points",
             "layout": {
-                "icon-image": "airport_11",
+                {{ if .SelfHostedMap }}
+                "icon-image": "marker_11",
+                {{ else }}
+                "icon-image": "triangle-15",
+                {{ end }}
                 "text-field": ["get", "device_id"],
-                "text-font": ["Roboto Regular"],
                 "text-variable-anchor": ["top"],
                 "text-justify": "auto",
-                "text-radial-offset": 0.7,
+                "text-radial-offset": 0.6,
             }
         });
     });
@@ -82,11 +97,9 @@
                 coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
             }
             var htmlData = "";
-            var keys = Object.keys(data);
             for (let key of Object.keys(data)) {
                 htmlData += key + ":" + data[key] + "<br>";
             }
-            console.log(keys);
 
             new mapboxgl.Popup()
                 .setLngLat(coordinates)

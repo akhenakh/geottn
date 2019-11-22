@@ -3,7 +3,7 @@ GeoTTN
 
 An application for The Things Network moving devices.
 
-This is an all in one server, that will store historical data of your LoRa devices and display them on a map, also exposing an API to query.  
+This is an all in one server, that will store historical data of your devices and display them on a map, also exposing an API to query.  
 
 The idea is to have a self hosted solution IOT that works without sending your data to a third party.
 
@@ -27,13 +27,16 @@ The code is modular so you can change it for your own purpose.
 
 You need to have some existing devices registered in the Things Network.  
 
-Simply pass your `appID` & your `appAccessKey` on the command line or via environment.
+Simply pass your `appID` & `appAccessKey` on the command line or via environment.
 
 You can also use the docker image as follow:
 
 ```
-docker run akhenakh/geottn -e APPID=myappid -e APPACCESSKEY=xxxxxxxxxx -e DBPATH=/data/geo.db -v /mysafesotorage/volume:/data
+docker run akhenakh/geottn:latest -e --tilesKey=pk.eyJxxxxxxxxxxxxxxxxxxxx  -e APPID=myappid -e APPACCESSKEY=xxxxxxxxxx -e DBPATH=/data/geo.db -v /mysafesotorage/volume:/data
 ```
+
+For the map to show up register with MapBox for a [free token](https://account.mapbox.com/access-tokens/) and pass it as `tilesKey`.  
+Note that you can use a [self hosted map solution](https://blog.nobugware.com/post/2019/self_hosted_world_maps/) with `selfHostedMap=true`.
 
 ## Plan
 

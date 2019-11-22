@@ -41,10 +41,14 @@ type Config struct {
 	// the cayenne channel used for gps messages
 	Channel int
 
-	// the URL where to point to get mapbox tiles
-	TilesURL string
-	// the Key for mapbox
+	// the Key for mapbox or self hosted
 	TilesKey string
+
+	// Set to false if using MapBox
+	SelfHostedMap bool
+
+	// the URL where to point to get tiles if not using MapBox
+	TilesURL string
 }
 
 func NewServer(appName string, logger log.Logger, geoDB storage.Indexer, cfg Config) *Server {
@@ -193,10 +197,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p := map[string]interface{}{
-		"TilesURL": s.config.TilesURL,
-		"TilesKey": s.config.TilesKey,
-		"Lat":      48.864716,
-		"Lng":      2.349014,
+		"TilesURL":      s.config.TilesURL,
+		"TilesKey":      s.config.TilesKey,
+		"Lat":           48.864716,
+		"Lng":           2.349014,
+		"SelfHostedMap": s.config.SelfHostedMap,
 	}
 
 	// serve file normally

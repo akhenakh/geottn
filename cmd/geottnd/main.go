@@ -44,8 +44,9 @@ var (
 	appAccessKey = flag.String("appAccessKey", "", "The things network access key")
 	channel      = flag.Int("channel", 1, "the Cayenne channel where to find gps messages")
 
-	tilesKey = flag.String("tilesKey", "", "The key that will passed in the queries to the tiles server")
-	tilesURL = flag.String(
+	selfHostedMap = flag.Bool("selfHostedMap", false, "Use a self hosted map rather than MapBox")
+	tilesKey      = flag.String("tilesKey", "", "The key that will passed in the queries to the tiles server")
+	tilesURL      = flag.String(
 		"tilesURL",
 		"http://127.0.0.1:8081",
 		"the URL where to point to get tiles",
@@ -172,9 +173,10 @@ func main() {
 	g.Go(func() error {
 		// web server
 		cfg := web.Config{
-			Channel:  *channel,
-			TilesURL: *tilesURL,
-			TilesKey: *tilesKey,
+			Channel:       *channel,
+			TilesURL:      *tilesURL,
+			TilesKey:      *tilesKey,
+			SelfHostedMap: *selfHostedMap,
 		}
 
 		s := web.NewServer(appName, logger, idx, cfg)

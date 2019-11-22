@@ -23,7 +23,10 @@ lint:
 	golangci-lint run
 
 geottnd:
-	cd cmd/geottnd && go build $(LDFLAGS)
+	cd cmd/geottnd && packr2 && go build $(LDFLAGS)
+
+geottnd-image: geottnd
+	cd cmd/geottnd && docker build -t geottnd:$(VERSION) .
 
 clean:
 	rm -f cmd/geottnd/geottnd
