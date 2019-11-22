@@ -83,34 +83,35 @@ func (s *Server) DataQuery(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	dp, err := s.geoDB.Get(vars["key"])
+	dps, err := s.geoDB.GetAll(vars["key"], 100)
 	if err != nil {
 		level.Error(s.logger).Log("msg", "can't query Get", "key", vars["key"], "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		return
 	}
-	if dp == nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
+
+	res := make([]map[string]interface{}, len(dps))
+	for i, dp := range dps {
+		dec := cayenne.NewDecoder(bytes.NewBuffer(dp.Value))
+		msg, err := dec.DecodeUplink()
+		if err != nil {
+			level.Error(s.logger).Log("msg", "can't decode uplink message", "key", vars["key"], "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		jsresp := make(map[string]interface{})
+		for k, v := range msg.Values() {
+			jsresp[k] = v
+		}
+		jsresp["device_id"] = dp.Key
+		jsresp["time"] = dp.Time
+
+		res[i] = jsresp
 	}
 
-	dec := cayenne.NewDecoder(bytes.NewBuffer(dp.Value))
-	msg, err := dec.DecodeUplink()
-	if err != nil {
-		level.Error(s.logger).Log("msg", "can't decode uplink message", "key", vars["key"], "error", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	response := make(map[string]interface{})
-	for k, v := range msg.Values() {
-		response[k] = v
-	}
-	response["device_id"] = dp.Key
-	response["time"] = dp.Time
-
-	b, err := json.Marshal(response)
+	b, err := json.Marshal(res)
 	if err != nil {
 		level.Error(s.logger).Log("msg", "can't marshal json", "key", vars["key"], "error", err)
 		w.WriteHeader(http.StatusInternalServerError)

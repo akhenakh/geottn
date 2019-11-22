@@ -3,22 +3,59 @@
 <head>
     <meta charset='utf-8' />
     <title>GeoTTN map {{ .Version }}</title>
-    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     {{ if .SelfHostedMap }}
     <script src='{{ .TilesURL }}/mapbox-gl.js'></script>
     <link href='{{ .TilesURL }}/mapbox-gl.css' rel='stylesheet' />
     {{ else }}
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.js'></script>
     <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.css' rel='stylesheet' />
-    {{ end }}
+   {{ end }}
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
     <style>
-        body { margin:0; padding:0; }
-        #map { position:absolute; top:0; bottom:0; width:100%; }
+        #map {
+            height: 700px;
+            margin-bottom: 10px;
+        }
+
+        #map img {
+            max-width: none;
+            min-width: 0px;
+            height: auto;
+        }
     </style>
 </head>
 <body>
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <div id='map'></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <dl class="row">
+                <dt class="col-sm-3">Device</dt>
+                <dd class="col-sm-9" id="device_id">No device selected</dd>
+            </dl>
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th scope="col">Time</th>
+                    <th scope="col">Values</th>
+                </tr>
+                </thead>
+                <tbody id='device_body'>
 
-<div id='map'></div>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 <script>
     {{ if not .SelfHostedMap }}
     mapboxgl.accessToken = '{{ .TilesKey }}';
@@ -97,14 +134,34 @@
                 coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
             }
             var htmlData = "";
-            for (let key of Object.keys(data)) {
-                htmlData += key + ":" + data[key] + "<br>";
+            for (let key of Object.keys(data[0])) {
+                if (key === 'device_id') { continue; }
+                htmlData += key + ":" + data[0][key] + "<br>";
             }
 
             new mapboxgl.Popup()
                 .setLngLat(coordinates)
                 .setHTML(htmlData)
                 .addTo(map);
+
+            const devicediv = document.getElementById('device_id');
+            devicediv.innerHTML = data[0].device_id;
+
+            const devicebody = document.getElementById('device_body');
+            devicebody.innerHTML = '';
+
+            data.forEach(function (value) {
+                let html = '<tr><td>' + value["time"] + '<td>';
+
+                for (let key of Object.keys(value)) {
+                    if (key === 'time' || key === 'device_id') { continue; }
+                    html += key + ":" + value[key] + " ";
+                }
+                html += '</td></tr>';
+
+                devicebody.innerHTML += html;
+            });
+
         };
         xhr.send();
     });
