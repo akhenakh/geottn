@@ -75,7 +75,7 @@
         center: [{{ .Lng }}, {{ .Lat }}],
         zoom: 6,
         maxZoom: 15,
-        minZoom: 6,
+        minZoom: 2,
         {{ if .SelfHostedMap}}
         transformRequest: (url, resourceType)=> {
             if(resourceType === 'Tile') {
@@ -104,11 +104,55 @@
     }
     map.on('load', function () {
 
-        map.addSource('points', { type: 'geojson', data: urlForBounds() });
+        map.addSource('points', {
+            type: 'geojson',
+            cluster: true,
+            clusterRadius: 60,
+            data: urlForBounds() });
+
+        map.addLayer({
+            id: 'clusters',
+            type: 'circle',
+            source: 'points',
+            paint: {
+                'circle-color': {
+                    property: 'point_count',
+                    type: 'interval',
+                    stops: [
+                        [0, '#41A337'],
+                        [100, '#2D7026'],
+                        [750, '#0B5703'],
+                    ]
+                },
+                'circle-radius': {
+                    property: 'point_count',
+                    type: 'interval',
+                    stops: [
+                        [0, 20],
+                        [100, 30],
+                        [750, 40]
+                    ]
+                }
+            }
+        });
+
+        map.addLayer({
+            id: 'cluster-count',
+            type: 'symbol',
+            source: 'points',
+            filter: ['has', 'point_count'],
+            layout: {
+                'text-field': ["get", "point_count"],
+                'text-size': 20
+            }
+        });
+
+
         map.addLayer({
             "id": "points",
             "type": "symbol",
             "source": "points",
+            "filter": ['!has', 'point_count'],
             "layout": {
                 {{ if .SelfHostedMap }}
                 "icon-image": "marker_11",
