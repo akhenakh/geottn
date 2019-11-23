@@ -181,6 +181,48 @@
                 devicelist.innerHTML += `<li class="list-group-item"><button type="button" class="btn btn-link">` + value + `</button></li>`;
             });
 
+            let btns = document.getElementsByClassName( 'btn' );
+
+            for ( let btn of btns ) {
+                btn.onclick = function() {
+                    console.log(this.textContent);
+                    const bxhr = new XMLHttpRequest();
+
+                    bxhr.open('GET', "/api/data/" + this.textContent, true);
+                    bxhr.onload = function() {
+                        if (xhr.status !== 200) {
+                            return;
+                        }
+                        let data = JSON.parse(bxhr.responseText);
+
+                        const devicediv = document.getElementById('device_id');
+                        devicediv.innerHTML = data[0].device_id;
+
+                        const devicebody = document.getElementById('device_body');
+                        devicebody.innerHTML = '';
+
+                        map.flyTo({
+                            center: [ data[0].lng, data[0].lat ],
+                            zoom: 13,
+                            bearing: 0,
+                        });
+                        data.forEach(function (value) {
+                            let html = '<tr><td>' + value["time"] + '<td>';
+
+                            for (let key of Object.keys(value)) {
+                                if (key === 'time' || key === 'device_id') { continue; }
+                                html += key + ":" + value[key] + " ";
+                            }
+                            html += '</td></tr>';
+
+                            devicebody.innerHTML += html;
+                        });
+
+                    };
+                    bxhr.send();
+                }
+            }
+
         };
         xhr.send();
     });

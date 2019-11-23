@@ -145,6 +145,8 @@ func (s *Server) DataQuery(w http.ResponseWriter, r *http.Request) {
 			jsresp[k] = v
 		}
 		jsresp["device_id"] = dp.Key
+		jsresp["lat"] = dp.Lat
+		jsresp["lng"] = dp.Lng
 		jsresp["time"] = dp.Time.Format(time.RFC3339)
 
 		res[i] = jsresp
