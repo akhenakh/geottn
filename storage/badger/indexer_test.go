@@ -56,6 +56,25 @@ func TestStoreGeoVal(t *testing.T) {
 	require.Equal(t, v, dps[0].Value)
 }
 
+func TestKeys(t *testing.T) {
+	bdb, clean := openStore(t)
+	defer clean()
+
+	idx := &Indexer{
+		DB: bdb,
+	}
+	ts := time.Now().UTC()
+	k := "KEY"
+	v := []byte("VALUE")
+	err := idx.Store(k, v, 48.8, 2.2, ts)
+	require.NoError(t, err)
+
+	res, err := idx.Keys()
+	require.NoError(t, err)
+	require.Len(t, res, 1)
+	require.Equal(t, k, res[0])
+}
+
 func TestGetAll(t *testing.T) {
 	bdb, clean := openStore(t)
 	defer clean()

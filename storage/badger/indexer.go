@@ -28,6 +28,9 @@ func (idx *Indexer) StoreTx(txi storage.Tx, k string, v []byte, lat, lng float64
 	// the datakey D
 	dk := storage.DataKey(k, t, lat, lng)
 
+	// the listing key L
+	kk := storage.ListKey(k)
+
 	// Check for existing
 	// get rid of the last 64bits ts and 64bits s2 cell to iterate on the prefix
 	prefix := dk[:len(dk)-8-8]
@@ -36,7 +39,10 @@ func (idx *Indexer) StoreTx(txi storage.Tx, k string, v []byte, lat, lng float64
 	it := tx.NewIterator(opts)
 	defer it.Close()
 
+	exist := false
+
 	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		exist = true
 		item := it.Item()
 		ck := item.KeyCopy(nil)
 
@@ -59,18 +65,24 @@ func (idx *Indexer) StoreTx(txi storage.Tx, k string, v []byte, lat, lng float64
 
 	// storing G
 	e := badger.NewEntry(pk, v)
-
 	if err := tx.SetEntry(e); err != nil {
 		return err
 	}
 
 	// storing D
 	e = badger.NewEntry(dk, v)
-
 	if err := tx.SetEntry(e); err != nil {
 		return err
 	}
 
+	// storing L
+	if !exist {
+		e = badger.NewEntry(kk, nil)
+		if err := tx.SetEntry(e); err != nil {
+			return err
+		}
+
+	}
 	return nil
 
 }
@@ -134,7 +146,7 @@ func (idx *Indexer) GetAll(k string, count int) ([]storage.DataPoint, error) {
 	return res, err
 }
 
-// GetAll the most recent entry for k
+// Get the most recent entry for k
 func (idx *Indexer) Get(k string) (*storage.DataPoint, error) {
 	res, err := idx.GetAll(k, 1)
 	if err != nil {
@@ -144,6 +156,32 @@ func (idx *Indexer) Get(k string) (*storage.DataPoint, error) {
 		return nil, nil
 	}
 	return &res[0], err
+}
+
+// Keys list all keys
+func (idx *Indexer) Keys() ([]string, error) {
+	var res []string
+	err := idx.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		prefix := []byte(storage.Prefix + "L")
+
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			k := item.KeyCopy(nil)
+			rk := k[len(storage.Prefix)+1:]
+			res = append(res, string(rk))
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // RectPointSearch returns all Points contained in the rect

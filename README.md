@@ -65,6 +65,7 @@ service GeoTTN {
   rpc RectSearch(RectSearchRequest) returns (DataPoints) {}
   rpc Get(GetRequest) returns (DataPoint) {}
   rpc GetAll(GetRequest) returns (DataPoints) {}
+  rpc Keys(google.protobuf.Empty) returns (KeyList) {}
 }
 ```
 
@@ -83,6 +84,7 @@ There is a demo cli in `cmd/geottncli`
 
 A very simple web API (used for the web interface):
 ```go
+r.HandleFunc("/api/devices", s.DevicesQuery)
 r.HandleFunc("/api/data/{key}", s.DataQuery)
 r.HandleFunc("/api/rect/{urlat}/{urlng}/{bllat}/{bllng}", s.RectQuery)
 ```

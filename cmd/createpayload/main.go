@@ -19,7 +19,7 @@ func main() {
 
 	e := cayenne.NewEncoder()
 	e.AddGPS(uint8(*channel), float32(*lat), float32(*lng), 0.0)
-
+	e.AddTemperature(uint8(*channel+1), -3)
 	b := e.Bytes()
 	hexPayload := hex.EncodeToString(b)
 	fmt.Println("Data", hexPayload)

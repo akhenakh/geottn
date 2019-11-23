@@ -15,6 +15,7 @@ type Indexer interface {
 	Store(k string, v []byte, lat, lng float64, t time.Time) error
 	StoreTx(tx Tx, k string, v []byte, lat, lng float64, t time.Time) error
 	Get(k string) (*DataPoint, error)
+	Keys() ([]string, error)
 	GetAll(k string, count int) ([]DataPoint, error)
 	RadiusSearch(lat, lng, radius float64) ([]DataPoint, error)
 	RectSearch(urlat, urlng, bllat, bllng float64) ([]DataPoint, error)
@@ -60,6 +61,12 @@ func PointKey(lat, lng float64, t time.Time, k string) []byte {
 	copy(gk[len(Prefix)+1+8:], ts)
 	copy(gk[len(Prefix)+1+8+8:], k)
 	return gk
+}
+
+// ListingKey returns the key used to list all keys
+func ListKey(k string) []byte {
+	// a key Prefix+"L"+key
+	return []byte(Prefix + "L" + k)
 }
 
 // ReadPointKey returns cell, time, key

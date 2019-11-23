@@ -62,6 +62,44 @@ func NewServer(appName string, logger log.Logger, geoDB storage.Indexer, cfg Con
 	}
 }
 
+func (s *Server) DevicesQuery(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	var serverSpan opentracing.Span
+	operationName := "/api/data"
+	wireContext, err := opentracing.GlobalTracer().Extract(
+		opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(r.Header))
+	if err != nil {
+		level.Debug(s.logger).Log("msg", "can't find a span", "error", err)
+	}
+
+	serverSpan = opentracing.StartSpan(
+		operationName,
+		ext.RPCServerOption(wireContext))
+
+	defer serverSpan.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, serverSpan)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	keys, err := s.geoDB.Keys()
+	if err != nil {
+		level.Error(s.logger).Log("msg", "can't query fetch keys", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	b, err := json.Marshal(keys)
+	if err != nil {
+		level.Error(s.logger).Log("msg", "can't marshal json", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.Write(b)
+}
+
 func (s *Server) DataQuery(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	var serverSpan opentracing.Span
@@ -87,7 +125,7 @@ func (s *Server) DataQuery(w http.ResponseWriter, r *http.Request) {
 	dps, err := s.geoDB.GetAll(vars["key"], 100)
 	if err != nil {
 		level.Error(s.logger).Log("msg", "can't query Get", "key", vars["key"], "error", err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
@@ -98,7 +136,7 @@ func (s *Server) DataQuery(w http.ResponseWriter, r *http.Request) {
 		msg, err := dec.DecodeUplink()
 		if err != nil {
 			level.Error(s.logger).Log("msg", "can't decode uplink message", "key", vars["key"], "error", err)
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}

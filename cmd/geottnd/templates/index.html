@@ -32,27 +32,32 @@
 <body>
 <div class="container">
     <div class="row">
-        <div class="col">
-            <div id='map'></div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col">
-            <dl class="row">
-                <dt class="col-sm-3">Device</dt>
-                <dd class="col-sm-9" id="device_id">No device selected</dd>
-            </dl>
-            <table class="table table-striped">
-                <thead>
-                <tr>
-                    <th scope="col">Time</th>
-                    <th scope="col">Values</th>
-                </tr>
-                </thead>
-                <tbody id='device_body'>
+        <div class="col-2">
+            <ul class="list-group list-group-flush" id="devices_list">
 
-                </tbody>
-            </table>
+            </ul>
+        </div>
+        <div class="col-10">
+            <div id='map'></div>
+            <div class="row">
+                <div class="col">
+                    <dl class="row">
+                        <dt class="col-sm-3">Device</dt>
+                        <dd class="col-sm-9" id="device_id">No device selected</dd>
+                    </dl>
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th scope="col">Time</th>
+                            <th scope="col">Values</th>
+                        </tr>
+                        </thead>
+                        <tbody id='device_body'>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -98,6 +103,7 @@
             "/" + mapBounds.getSouthWest().lat + "/" + mapBounds.getSouthWest().lng;
     }
     map.on('load', function () {
+
         map.addSource('points', { type: 'geojson', data: urlForBounds() });
         map.addLayer({
             "id": "points",
@@ -115,6 +121,24 @@
                 "text-radial-offset": 0.6,
             }
         });
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', "/api/devices", true);
+        xhr.onload = function() {
+            if (xhr.status !== 200) {
+                return;
+            }
+            let data = JSON.parse(xhr.responseText);
+
+            const devicelist = document.getElementById('devices_list');
+            devicelist.innerHTML = '<li class="list-group-item">Devices List</li>';
+
+            data.forEach(function (value) {
+                devicelist.innerHTML += `<li class="list-group-item"><button type="button" class="btn btn-link">` + value + `</button></li>`;
+            });
+
+        };
+        xhr.send();
     });
     map.on('click', 'points', function (e) {
         const key = e.features[0].properties.device_id;

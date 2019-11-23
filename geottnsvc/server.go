@@ -121,6 +121,15 @@ func (s *Server) Get(ctx context.Context, req *GetRequest) (*DataPoint, error) {
 	return StorageToDataPoint(dps), nil
 }
 
+func (s *Server) Keys(context.Context, *empty.Empty) (*KeyList, error) {
+	keys, err := s.GeoDB.Keys()
+	if err != nil {
+		return nil, err
+	}
+
+	return &KeyList{Keys: keys}, nil
+}
+
 func (s *Server) GetAll(ctx context.Context, in *GetRequest) (*DataPoints, error) {
 	return nil, errors.New("not implemented")
 }

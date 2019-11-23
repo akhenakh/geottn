@@ -188,6 +188,7 @@ func main() {
 		s.Box = box
 
 		r := mux.NewRouter()
+		r.HandleFunc("/api/devices", s.DevicesQuery)
 		r.HandleFunc("/api/data/{key}", s.DataQuery)
 		r.HandleFunc("/api/rect/{urlat}/{urlng}/{bllat}/{bllng}", s.RectQuery)
 		r.PathPrefix("/").Handler(
