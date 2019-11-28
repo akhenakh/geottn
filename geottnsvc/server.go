@@ -13,6 +13,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/health"
 
+	"github.com/akhenakh/geottn/metrics"
 	"github.com/akhenakh/geottn/storage"
 )
 
@@ -41,7 +42,7 @@ func NewServer(appName string, logger log.Logger, idx storage.Indexer, cfg Confi
 
 // HandleMessage handles message from TTN
 func (s *Server) HandleMessage(ctx context.Context, msg *types.UplinkMessage) {
-	MsgReceivedCounter.Inc()
+	metrics.MsgReceivedCounter.WithLabelValues(metrics.ViaLabel, metrics.ReceivedViaTTN)
 	if msg.PayloadFields == nil {
 		level.Debug(s.logger).Log("msg", "received msg with empty PayloadFields")
 		return
@@ -65,7 +66,7 @@ func (s *Server) HandleMessage(ctx context.Context, msg *types.UplinkMessage) {
 		level.Error(s.logger).Log("msg", "can't store datapoint", "error", err)
 		return
 	}
-	InsertCounter.Inc()
+	metrics.InsertCounter.Inc()
 }
 
 func (s *Server) Store(ctx context.Context, dp *DataPoint) (*empty.Empty, error) {
@@ -78,7 +79,7 @@ func (s *Server) Store(ctx context.Context, dp *DataPoint) (*empty.Empty, error)
 	if err != nil {
 		return e, err
 	}
-	InsertCounter.Inc()
+	metrics.InsertCounter.Inc()
 	return e, nil
 }
 

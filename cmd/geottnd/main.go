@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/akhenakh/geottn/geottnsvc"
+	"github.com/akhenakh/geottn/gw"
 	badgeridx "github.com/akhenakh/geottn/storage/badger"
 	"github.com/akhenakh/geottn/web"
 )
@@ -40,7 +41,7 @@ const appName = "geottnd"
 var (
 	version = "no version from LDFLAGS"
 
-	appID        = flag.String("appID", "akhtestapp", "The things network application ID")
+	appID        = flag.String("appID", "", "The things network application ID")
 	appAccessKey = flag.String("appAccessKey", "", "The things network access key")
 	channel      = flag.Int("channel", 1, "the Cayenne channel where to find gps messages")
 
@@ -52,8 +53,8 @@ var (
 		"the URL where to point to get tiles",
 	)
 
-	dbPath = flag.String("dbPath", "geo.db", "DB path")
-
+	dbPath          = flag.String("dbPath", "geo.db", "DB path")
+	gwPort          = flag.Int("gwPort", 1700, "gw UDP port")
 	httpMetricsPort = flag.Int("httpMetricsPort", 8888, "http port")
 	httpAPIPort     = flag.Int("httpAPIPort", 9201, "http API port")
 	grpcPort        = flag.Int("grpcPort", 9200, "gRPC API port")
@@ -167,6 +168,18 @@ func main() {
 		healthServer.SetServingStatus(fmt.Sprintf("grpc.health.v1.%s", appName), healthpb.HealthCheckResponse_SERVING)
 
 		return grpcServer.Serve(ln)
+	})
+
+	// gw server
+	gw := gw.NewServer(appName, logger, idx)
+	g.Go(func() error {
+		addr := fmt.Sprintf(":%d", *gwPort)
+
+		err := gw.StartListener(ctx, addr)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 
 	// web server
@@ -301,6 +314,8 @@ func main() {
 	if grpcHealthServer != nil {
 		grpcHealthServer.GracefulStop()
 	}
+
+	gw.Close()
 
 	err = g.Wait()
 	if err != nil {

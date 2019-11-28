@@ -5,8 +5,9 @@ go 1.13
 require (
 	github.com/TheThingsNetwork/go-app-sdk v0.0.0-20190516120600-5d30ea62f538
 	github.com/TheThingsNetwork/ttn/core/types v0.0.0-20190516112328-fcd38e2b9dc6
-	github.com/akhenakh/cayenne v0.0.0-20191121201738-ad831dca3b86
+	github.com/akhenakh/cayenne v0.0.0-20191121210236-2ec819ecc885
 	github.com/armon/go-metrics v0.3.0 // indirect
+	github.com/brocaar/lorawan v0.0.0-20191115102621-6095d473cf60 // indirect
 	github.com/dgraph-io/badger/v2 v2.0.0
 	github.com/go-kit/kit v0.9.0
 	github.com/gobuffalo/envy v1.8.1 // indirect

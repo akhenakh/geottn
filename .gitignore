@@ -18,3 +18,4 @@
 !/cmd/ttncli/ttncli
 !/cmd/geottnd/geottnd
 !/cmd/geottnd/geo.db/
+!/cmd/fake_push_data/fake_push_data
