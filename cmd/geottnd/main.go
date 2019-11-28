@@ -89,6 +89,7 @@ func main() {
 
 	// Badger
 	opts := badger.DefaultOptions(*dbPath)
+	opts.Logger = nil
 	opts.TableLoadingMode = options.FileIO
 
 	bdb, err := badger.Open(opts)
