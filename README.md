@@ -104,3 +104,7 @@ Some stats are available on the metrics ports `httpMetricsPort` eg `http://local
 ## Help
 
 This is a work in progress, help and ideas are welcome.
+
+## Issues
+
+- If you don't set your `appAccessKey` right the error message will show up 1mn later.

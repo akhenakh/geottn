@@ -30,6 +30,7 @@ geottnd-image: geottnd
 
 geottnd-publish-image: geottnd-image
 	docker tag  geottnd:$(VERSION) akhenakh/geottnd:latest
+	docker push akhenakh/geottnd:latest
 
 clean:
 	rm -f cmd/geottnd/geottnd
