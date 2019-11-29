@@ -95,6 +95,7 @@ Some stats are available on the metrics ports `httpMetricsPort` eg `http://local
 
 ## Plan
 
+- UDP semtech gw
 - Register devices with the web interface
 - Vuejs web interface
 - end to end TLS certs
