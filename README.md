@@ -89,6 +89,9 @@ r.HandleFunc("/api/data/{key}", s.DataQuery)
 r.HandleFunc("/api/rect/{urlat}/{urlng}/{bllat}/{bllng}", s.RectQuery)
 ```
 
+## Stats
+
+Some stats are available on the metrics ports `httpMetricsPort` eg `http://localhost:8888/metrics`
 
 ## Plan
 
