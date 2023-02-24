@@ -28,13 +28,10 @@ require (
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/prometheus/client_golang v0.9.2
 	github.com/rogpeppe/go-internal v1.5.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/twpayne/go-geom v1.0.5
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
-	golang.org/x/tools v0.0.0-20191121214350-f51c1a7cd27a // indirect
+	golang.org/x/net v0.7.0
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 	google.golang.org/grpc v1.20.1
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )
